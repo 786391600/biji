@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>面向对象canvas</title>
+</head>
+<script>
+    window.onload=function(){
+       var canvas=document.querySelector('canvas');
+       var cobj=canvas.getContext('2d');
+       var but=document.querySelectorAll('button');
+        var color=document.querySelector('.color');
+        var box1=document.querySelector('.box1');
+        var box1Con=document.querySelector('.box1-con');
+
+       var objColor='fill';
+
+        var obj=new shape(canvas,cobj);
+        obj.pen();
+        for(var i=0;i<but.length;i++){
+            but[i].onclick=function(){
+                obj.type=this.getAttribute('class');
+            }
+        }
+        //选择颜色
+        color.onchange=function () {
+            if(objColor=='fill'){
+                obj.fillStyle=this.value;
+                box1.style.display='none';
+                box1Con.style.display='block';
+            }else if(objColor=='stroke'){
+                obj.strokeStyle=this.value;
+                box1.style.display='none';
+                box1Con.style.display='block';
+            }
+        }
+        //提示框开关
+        var boxfleg=document.querySelector('.box1-felg');
+        boxfleg.onclick=function(){
+           box1.style.display='none';
+        }
+
+        //导航
+        var navLi=document.querySelectorAll('.nav-li');
+        var xl=document.querySelectorAll('.xl');
+        for(var k=0;k<navLi.length;k++){
+            navLi[k].index=k;
+            navLi[k].onmouseover=function(){
+                if(xl[this.index].children){
+                    xl[this.index].style.height=40*xl[this.index].children.length+'px';
+
+                }
+            }
+            navLi[k].onmouseout=function(){
+                if(xl[this.index].children){
+                    xl[this.index].style.height='0px';
+
+                }
+            }
+
+        }
+        //选择
+        var sx=document.querySelectorAll('.sx');
+        var setxz=document.querySelector('.setxz');
+        for(var k=0;k<sx.length;k++){
+            sx[k].onclick=function(){
+               if(setClass(this.className,'xz')){
+                   setxz.style.cssText='z-index:0;transition:left 2s;left:-100px;';
+                   if(this.getAttribute('data')=='pen'){
+                     obj.pen();
+                 }else{
+                     obj.type=this.getAttribute('data');
+                     obj.draw();
+                 }
+               }else if(setClass(this.className,'col')){
+                   objColor=this.getAttribute('data');
+                   box1.style.display='block';
+                   box1Con.style.display='block';
+
+               }else if(setClass(this.className,'gj')){
+                   if(this.getAttribute('data')=='cliep'){
+                       obj.cliep();
+                   }
+               }else if(setClass(this.className,'file')){
+                   if(this.getAttribute('data')=='fanhui'){
+                      obj.back();
+                   }else if(this.getAttribute('data')=='new'){
+                      if(obj.history.length==0){
+                          alert('您还没有画图哦')
+                      }else if(obj.history.length>0){
+                          var yes=confirm('是否保存图片？');
+                          if(yes){
+                              alert('yes');
+                          }else{
+                              obj.history=[];
+                              cobj.clearRect(0,0,600,600);
+                          }
+                      }
+                   }else if(this.getAttribute('data')=='baocun'){
+                       obj.baocun();
+                   }
+               }
+            }
+        }
+        //侧边栏
+        var xzBut=document.querySelectorAll('.hz');
+        xzBut[1].style.border='5px solid black';
+        for(var i=0;i<xzBut.length;i++){
+            xzBut[i].index=i;
+            xzBut[i].onclick=function(){
+                for(var k=0;k<xzBut.length;k++){
+                    xzBut[k].style.border='0';
+                }
+                this.style.border='5px solid black';
+                if(this.index==0){
+                    obj.setType='stroke';
+                }else{
+                    obj.setType='fill';
+                }
+            }
+        }
+
+
+    }
+
+
+
+//////////////////////////////////////////////////////////////
+    function shape(canvas,cobj){
+      this.canvas=canvas;
+      this.cobj=cobj;
+      this.history=[];
+      this.type='line';
+      this.lineWidth=1;
+      this.fillStyle='black';
+      this.strokeStyle='red';
+      this.bianNum=5;
+      this.jiaoNum=5;
+      this.setType='fill';
+      this.clicpWidth=15;
+    }
+    shape.prototype={
+        init:function(){
+            this.cobj.lineWidth=this.lineWidth;
+            this.cobj.fillStyle=this.fillStyle;
+            this.cobj.strokeStyle=this.strokeStyle;
+            this.cobj.globalCompositeOperation='source-over';
+
+        },
+        initclip:function () {
+            this.cobj.lineWidth=this.clicpWidth;
+        },
+        draw:function(){
+           var that=this;
+           that.canvas.onmousedown=function(e){
+                var e=e||window.event;
+                var sX=e.offsetX;
+                var sY=e.offsetY;
+             that.canvas.onmousemove=function(e){
+                 var e=e||window.event;
+                 var eX=e.offsetX;
+                 var eY=e.offsetY;
+                 that.cobj.clearRect(0,0,600,600);
+                 if(that.history.length>0){
+                     that.cobj.putImageData(that.history[that.history.length-1],0,0);
+                 }
+//                 that.line(sX,sY,eX,eY);
+//                 that.rect(sX,sY,eX-sX,eY-sY);
+                   that[that.type](sX,sY,eX,eY);
+
+
+             }
+             that.canvas.onmouseup=function(){
+                 that.history.push(that.cobj.getImageData(0,0,600,600));
+                 that.canvas.onmouseup=null;
+                 that.canvas.onmousemove=null;
+             }
+
+            }
+        },
+        line:function (sx,sy,ex,ey) {
+            this.init();
+            this.cobj.beginPath();
+            this.cobj.moveTo(sx,sy);
+            this.cobj.lineTo(ex,ey);
+            this.cobj.stroke();
+        },
+        rect:function (sx,sy,ew,eh) {
+            this.init();
+            this.cobj.beginPath();
+            this.cobj.rect(sx,sy,ew-sx,eh-sy);
+            this.cobj[this.setType]();
+
+        },
+        bian:function(sx,sy,ew,eh){
+            this.init();
+            var anle=360/this.bianNum*Math.PI/180;
+            var r=Math.sqrt((sx-ew)*(sx-ew)+(sy-eh)*(sy-eh));
+            this.cobj.beginPath();
+            for(var i=0;i<this.bianNum;i++){
+                this.cobj.lineTo(Math.cos(anle*i)*r+sx,Math.sin(anle*i)*r+sy);
+            }
+            this.cobj.closePath();
+            this.cobj[this.setType]();
+
+        },
+        arc:function(sx,sy,ew,eh){
+            this.init();
+            this.cobj.beginPath();
+            this.cobj.arc(sx,sy,Math.sqrt((sx-ew)*(sx-ew)+(sy-eh)*(sy-eh)),Math.PI*2,false);
+            this.cobj[this.setType]();
+        },
+        jiao:function (sx,sy,ew,eh) {
+            this.init();
+            this.cobj.beginPath();
+            var angle=360/(this.jiaoNum*2)*Math.PI/180;
+            var r=Math.sqrt((sx-ew)*(sx-ew)+(sy-eh)*(sy-eh));
+            for(var i=0;i<this.jiaoNum*2;i++){
+                if(i%2==1){
+                    this.cobj.lineTo(Math.cos(i*angle)*r+sx,Math.sin(i*angle)*r+sy);
+                }else{
+                    this.cobj.lineTo(Math.cos(i*angle)*r/3+sx,Math.sin(i*angle)*r/3+sy);
+                }
+            }
+            this.cobj.closePath();
+            this.cobj[this.setType]();
+
+        },
+        pen:function(){
+            var that=this;
+            that.canvas.onmousedown=function(e){
+                var e=e||window.event;
+                var sX=e.offsetX;
+                var sY=e.offsetY;
+                that.init();
+                that.cobj.beginPath();
+                that.cobj.moveTo(sX,sY);
+                that.canvas.onmousemove=function(e){
+                    var e=e||window.event;
+                    var eX=e.offsetX;
+                    var eY=e.offsetY;
+                    that.cobj.lineTo(eX,eY);
+                    that.cobj.stroke();
+
+
+                }
+                that.canvas.onmouseup=function(){
+                    that.history.push(that.cobj.getImageData(0,0,600,600));
+                    that.canvas.onmouseup=null;
+                    that.canvas.onmousemove=null;
+                }
+
+            }
+        },
+        cliep:function(){
+            var that=this;
+            that.canvas.onmousedown=function(e){
+                var e=e||window.event;
+                var sX=e.offsetX;
+                var sY=e.offsetY;
+                that.initclip();
+                that.cobj.lineCap='round';
+                that.cobj.lineJoin='round';
+                that.cobj.globalCompositeOperation="destination-out";
+                that.cobj.beginPath();
+                that.cobj.moveTo(sX,sY);
+                that.canvas.onmousemove=function(e){
+                    var e=e||window.event;
+                    var eX=e.offsetX;
+                    var eY=e.offsetY;
+//                    that.cobj.save();
+                    that.cobj.lineTo(eX,eY);
+                    that.cobj.stroke();
+//                    that.cobj.restore();
+
+
+                }
+                that.canvas.onmouseup=function(){
+                    that.history.push(that.cobj.getImageData(0,0,600,600));
+                    that.canvas.onmouseup=null;
+                    that.canvas.onmousemove=null;
+                }
+
+            }
+        },
+        back:function(){
+            if(this.history.length==0){
+                alert('不能返回');
+            }else if(this.history.length==1){
+                this.history.pop();
+                this.cobj.clearRect(0,0,600,600);
+            }else{
+                this.history.pop();
+                this.cobj.putImageData(this.history[this.history.length-1],0,0);
+            }
+
+        },
+        new:function(){
+            if(this.history.length==0){
+                alert('您还没有画图哦');
+            }else if(this.history.length>0){
+
+            }
+        },
+        baocun:function(){
+            var url=this.canvas.toDataURL();
+            var newurl=url.replace("image/png","stream/octet")
+            location.href=newurl;
+        }
+    }
+
+    function setClass(name,pp) {
+        var arr=name.split(' ');
+        for(var i=0;i<arr.length;i++){
+            if(arr[i]==pp){
+                return true;
+            }
+        }
+        return false;
+    }
+
+</script>
+<style>
+    .box{
+        position: relative;
+        width: 600px;
+        height:600px;
+        margin: auto;
+    }
+    canvas{
+        background: #ccc;
+        position:absolute;
+
+    }
+    .nav{
+        width: 600px;
+        height:40px;
+        margin: 0 auto;
+    }
+    .nav ul{
+        width: 100%;
+        height:100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+    .nav-li{
+        width:100px;
+        height:100%;
+        float: left;
+        background: rgba(0,0,0,0.5);
+        text-align: center;
+        line-height: 40px;
+        cursor: pointer;
+        position: relative;
+        z-index: 10;
+        color:white;
+    }
+    .nav .xl{
+        position: absolute;
+        height: 0;
+        width: 100px;
+        top:40px;
+        overflow: hidden;
+    }
+    .nav .xl>li{
+        height: 40px;
+        border-bottom: 1px solid black;
+    }
+    .nav li:hover{
+        background: rgba(0,0,0,1);
+    }
+    .color{
+        display: inline;
+    }
+    .box1{
+        width: 300px;
+        height: 200px;
+        position: absolute;
+        background: rgba(0,0,0,0.5);
+        left: 0;right: 0;
+        top:0;bottom: 0px;
+        margin: auto;
+        border-radius: 10px;
+        display:none;
+    }
+    .box1-felg{
+        width:20px;
+        height:20px;
+        background: rgba(0,0,0,0.3);
+        position: absolute;
+        right: 2px;
+        top: 2px;
+        border-radius: 10px;
+        transition:transform 2s;
+        cursor: pointer;
+    }
+    .box1-felg:hover{
+        transform: rotate(360deg);
+    }
+    .box1-felg:before{
+        content: '';
+        display: block;
+        height: 18px;
+        width: 2px;
+        background: white;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        transform: rotateZ(45deg);
+    }
+    .box1-felg:after{
+        content: '';
+        display: block;
+        height: 18px;
+        width: 2px;
+        background: white;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        transform: rotateZ(-45deg);
+    }
+    .box1-con{
+        position: absolute;
+        width: 100%;
+        height:160px;
+        bottom: 10px;
+        text-align: center;
+        line-height:50px;
+        color:white;
+        display: none;
+    }
+    input[type=color]{
+        border: 0;
+        padding: 0;
+        margin: 0;
+        width: 100px;
+        height:40px;
+    }
+    .setxz{
+        position:absolute;
+        width:100px;
+        height:100%;
+        background: #7F7F7F;
+        left:0px;
+        z-index: -1;
+        text-align: center;
+    }
+    .setxz button{
+        margin-top: 15px;
+        font-size: 16px;
+        border: 0;
+        color:white;
+        padding: 5px;
+    }
+</style>
+<body>
+<div class="nav">
+    <ul>
+        <li class="nav-li">形状
+            <ul class="xl">
+                <li class="sx xz" data="line">线条</li>
+                <li class="sx xz" data="rect">矩形</li>
+                <li class="sx xz" data="arc">圆形</li>
+                <li class="sx xz" data="bian">五边形</li>
+                <li class="sx xz" data="jiao">五角形</li>
+                <li class="sx xz" data="pen">画笔</li>
+            </ul>
+        </li>
+        <li class="nav-li">颜色
+            <ul class="xl">
+                <li class="sx col" data="fill">填充颜色</li>
+                <li class="sx col" data="stroke">边框颜色</li>
+            </ul>
+        </li>
+        <li class="nav-li">工具
+            <ul class="xl">
+                <li class="sx gj" data="cliep">橡皮擦</li>
+            </ul>
+        </li>
+        <li class="nav-li">文件
+            <ul class="xl">
+                <li class="sx file" data="baocun">保存</li>
+                <li class="sx file" data="fanhui">返回</li>
+                <li class="sx file" data="new">新建</li>
+            </ul>
+        </li>
+    </ul>
+</div>
+<div class="box">
+    <canvas width="600px" height="600px">
+
+    </canvas>
+    <div class="box1">
+        <div class="box1-felg">
+
+        </div>
+        <div class="box1-con">
+            请选择颜色:<br>
+            <input type="color" class="color">
+        </div>
+    </div>
+    <div class="setxz">
+        <button class="hz">绘制线条</button>
+        <button class="hz">绘制图形</button>
+    </div>
+</div>
+
+</body>
+</html>
